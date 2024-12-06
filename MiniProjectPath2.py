@@ -64,7 +64,7 @@ from sklearn.model_selection import train_test_split
 #Extracting the data from the CSV
 dataset_2['High Temp'] = pandas.to_numeric(dataset_2['High Temp'].replace(',','', regex=True))
 dataset_2['Low Temp'] = pandas.to_numeric(dataset_2['Low Temp'].replace(',','', regex=True))
-dataset_2['Precipitatixon'] = pandas.to_numeric(dataset_2['Precipitation'].replace(',','', regex=True))
+dataset_2['Precipitation'] = pandas.to_numeric(dataset_2['Precipitation'].replace(',','', regex=True))
 dataset_2['Total'] = pandas.to_numeric(dataset_2['Total'].replace(',','', regex=True))
 
 weatherData = dataset_2[['High Temp', 'Low Temp', 'Precipitation']]
@@ -83,7 +83,7 @@ bikerPrediction = model.predict(weatherTest)
 #Printing the model's accuracy, r^2
 r2 = model.score(weatherTest, bikerTest)
 
-print("coefficient of determination: " + r2)
+print("coefficient of determination: " + str(r2))
 if r2 > 0.5:
     print('The model is accurate')
 else:
@@ -97,11 +97,30 @@ else:
 #(Hint: One way is that you can average the values over all weekdays and then see if there are some weekly patterns.)
 #Can you use this data to predict what *day* (Monday to Sunday) is today based on the number of bicyclists on the bridges?
 
-# dataset_2['Date'] = pandas.to_datetime(dataset_2['Date'])
-dataset_2['Day'] = dataset_2['Date'].dt.day_name()
+# Create a dictionary where the keys are days of the week and values are lists with all of the totals with the corresponding day of the week
+days_of_week = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+totals_by_day = {day: [] for day in days_of_week}
 
-#Averaging the data over all weekdays
-dayData = dataset_2[['Day', 'Total']]
-dayData = dayData.groupby('Day').mean()
+# Populate the dictionary with the totals
+for index, row in dataset_2.iterrows():
+    day = row['Day']
+    total = row['Total']
+    totals_by_day[day].append(total)
 
-#Finding the day with the highest average number of bicyclists
+# print(totals_by_day)
+
+# Find the average total for each day of the week
+averages_by_day = {day: np.mean(totals) for day, totals in totals_by_day.items()}
+# print(averages_by_day)
+# convert the values to floats from numpy floats
+averages_by_day = {day: float(average) for day, average in averages_by_day.items()}
+# print(averages_by_day)
+
+# Find the day with the highest average total
+max_average = max(averages_by_day.values())
+max_day = [day for day, average in averages_by_day.items() if average == max_average][0]
+
+print(f'The day with the highest average total is {max_day} with an average total of {int(max_average)}.')
+
+
+
