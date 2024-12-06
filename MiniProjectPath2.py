@@ -64,7 +64,7 @@ from sklearn.model_selection import train_test_split
 #Extracting the data from the CSV
 dataset_2['High Temp'] = pandas.to_numeric(dataset_2['High Temp'].replace(',','', regex=True))
 dataset_2['Low Temp'] = pandas.to_numeric(dataset_2['Low Temp'].replace(',','', regex=True))
-dataset_2['Precipitation'] = pandas.to_numeric(dataset_2['Precipitation'].replace(',','', regex=True))
+dataset_2['Precipitatixon'] = pandas.to_numeric(dataset_2['Precipitation'].replace(',','', regex=True))
 dataset_2['Total'] = pandas.to_numeric(dataset_2['Total'].replace(',','', regex=True))
 
 weatherData = dataset_2[['High Temp', 'Low Temp', 'Precipitation']]
@@ -88,3 +88,20 @@ if r2 > 0.5:
     print('The model is accurate')
 else:
     print('The model is not accurate')
+
+
+############################################################################
+#Part 3: Can you predict the day of the week based on the number of bicyclists?
+############################################################################
+#Can you analyze and visualize the data to identify any patterns or trends associated with specific days of the week?
+#(Hint: One way is that you can average the values over all weekdays and then see if there are some weekly patterns.)
+#Can you use this data to predict what *day* (Monday to Sunday) is today based on the number of bicyclists on the bridges?
+
+# dataset_2['Date'] = pandas.to_datetime(dataset_2['Date'])
+dataset_2['Day'] = dataset_2['Date'].dt.day_name()
+
+#Averaging the data over all weekdays
+dayData = dataset_2[['Day', 'Total']]
+dayData = dayData.groupby('Day').mean()
+
+#Finding the day with the highest average number of bicyclists
