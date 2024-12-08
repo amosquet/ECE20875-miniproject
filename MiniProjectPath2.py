@@ -3,8 +3,10 @@ import numpy as np
 from sklearn.metrics import accuracy_score, mean_squared_error
 from sklearn.linear_model import Ridge, LinearRegression
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 from collections import OrderedDict
+from sklearn.linear_model import LogisticRegression
 
 #for part 1
 def sampleSTDE(data):
@@ -49,12 +51,7 @@ def linRegression(data, bridges):
     pred = model.score(xTest, yTest)
     return model, pred
 
-#Logistic Regression for part 2
-def logRegression(data, bridges):
-
-    #have to convert the days to numbers then go from there.
-
-#weekly averages
+#Weekly averages for part 3
 def weekAvg(data, order):
 
     # Create an ordered dictionary where the keys are days of the week and values are lists with all of the totals with the corresponding day of the week
@@ -74,8 +71,37 @@ def weekAvg(data, order):
     # Return the dictionary of averages
     return avgDict
 
-#for part 3 analysis
-def part3(data, order, averages):
+#Preprocessing for part 3
+def preProcess(data, bridges):
+    
+    data['Day of Week'] = pd.Categorical(data['Day of Week'], categories=['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'], ordered=True)
+    data['Day Code'] = data['Day of Week'].cat.codes
+    x = data[bridges].values
+    y = data['Day Code'].values
+    
+    xTrain, xTest, yTrain, yTest = train_test_split(x, y, test_size=0.2, random_state=0)
+    
+    scaler = StandardScaler()
+    xTrain = scaler.fit_transform(xTrain)
+    xTest = scaler.transform(xTest)
+    
+    return xTrain, xTest, yTrain, yTest
+
+#Logistic Regression for part 3
+def logRegression(data, bridges):
+
+    xTrain, xTest, yTrain, yTest = preProcess(data, bridges)
+
+    model = LogisticRegression(max_iter=2000)  # Increase max_iter
+    model.fit(xTrain, yTrain)
+
+    yPred = model.predict(xTest)
+    accuracy = accuracy_score(yTest, yPred)
+
+    return model, accuracy
+
+#Helpoer function for part 3
+def p3Helper(data, bridges, averages):
 
     # plot the averages
     plt.figure(figsize=(14, 6))
@@ -84,6 +110,8 @@ def part3(data, order, averages):
     plt.ylabel("Average Number of Bikers")
     plt.title("Average Number of Bikers per Day of the Week")
     plt.show()
+
+    return logRegression(data, bridges)
 
     
 
@@ -109,11 +137,10 @@ def main():
     not_bridge = find_bridge_to_add_sensors(data, bridges)
     print(f"Put sensors on every bridge but the {not_bridge}")
 
-
     ############################################################################
     #Part 2: Can Weather Predict Bicyclist Numbers?
     ############################################################################
-    print("Part 2")
+    print("\nPart 2")
 
     bikerData = data['Total']
 
@@ -147,7 +174,6 @@ def main():
     # plt.legend()
     # plt.show()
 
-
     ############################################################################
     # Part 3: Can you predict the day of the week based on the number of bicyclists?
     ############################################################################
@@ -156,13 +182,15 @@ def main():
     days_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
     
     averages = weekAvg(data, days_order)
-    print(averages)
+    print(f"Biker averages on bridges per day: {averages}")
     #from the data provided, it seems that the number of bikers is highest on Wednesday and lowest on Sunday.
     #there does seem to be a trend, but it is not very strong. This will likely not be a very accurate model.
     #some of the data has less than a 1000 biker difference between days, which is not a lot when the total number of bikers is in the tens of thousands.
 
-    part3(data, days_order, averages)
+    model, accuracy = p3Helper(data, bridges, averages)
 
+    #printout the accuracy of logistic regression done for part 3
+    print(f"Accuracy of day of the week model: {accuracy:.2%}")
 
 if __name__ == "__main__":
     main()
