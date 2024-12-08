@@ -1,199 +1,147 @@
-import pandas
+import pandas as pd
 import numpy as np
-
-''' 
-The following is the starting code for path2 for data reading to make your first step easier.
-'dataset_2' is the clean data for path1.
-'''
-dataset_2 = pandas.read_csv('NYC_Bicycle_Counts_2016.csv') #Extracting CSV Data
-dataset_2['Brooklyn Bridge'] = pandas.to_numeric(dataset_2['Brooklyn Bridge'].replace(',','', regex=True)) #These 5 lines allow us to isolate and access bridge specific data
-dataset_2['Manhattan Bridge'] = pandas.to_numeric(dataset_2['Manhattan Bridge'].replace(',','', regex=True))
-dataset_2['Queensboro Bridge'] = pandas.to_numeric(dataset_2['Queensboro Bridge'].replace(',','', regex=True))
-dataset_2['Williamsburg Bridge'] = pandas.to_numeric(dataset_2['Williamsburg Bridge'].replace(',','', regex=True))
-dataset_2['Williamsburg Bridge'] = pandas.to_numeric(dataset_2['Williamsburg Bridge'].replace(',','', regex=True))
-# print(dataset_2.to_string()) #This line will print out your data
-
-#Dataset 2 is an Array showing the data from the CSV with 214 rows of data and columns based on the CSV
+from sklearn.metrics import accuracy_score, mean_squared_error
+from sklearn.linear_model import Ridge, LinearRegression
+from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
+from collections import OrderedDict
 
 
-
-############################################################################
-#Part 1: Finding Which Bridges to Add Sensors To
-############################################################################
-
-# Create individual numpy arrays for each bridge's data
-brookData = dataset_2['Brooklyn Bridge'].to_numpy()
-manData = dataset_2['Manhattan Bridge'].to_numpy()
-queenData = dataset_2['Queensboro Bridge'].to_numpy()
-willData = dataset_2['Williamsburg Bridge'].to_numpy()
-
-#Find the standard error of each bridge's dataset
 def sampleSTDE(data):
     return np.std(data, ddof=1) / np.sqrt(len(data))
 
-brookSTDE = sampleSTDE(brookData)
-manSTDE = sampleSTDE(manData)
-queenSTDE = sampleSTDE(queenData)
-willSTDE = sampleSTDE(willData)
+def find_bridge_to_add_sensors(data, bridges):
 
-#Find the bridge with the highest STDE
-STDEList = [brookSTDE, manSTDE, queenSTDE, willSTDE]
-if max(STDEList) == brookSTDE:
-    print('Put sensors on every bridge but the Brooklyn Bridge')
-elif max(STDEList) == manSTDE:
-    print('Put sensors on every bridge but the Manhattan Bridge')
-elif max(STDEList) == queenSTDE:
-    print('Put sensors on every bridge but the Queensboro Bridge')
-elif max(STDEList) == willSTDE:
-    print('Put sensors on every bridge but the Williamsburg Bridge')
-else:
-    print("Something went wrong")
+    brookData = data['Brooklyn Bridge'].to_numpy()
+    manData = data['Manhattan Bridge'].to_numpy()
+    queenData = data['Queensboro Bridge'].to_numpy()
+    willData = data['Williamsburg Bridge'].to_numpy()
 
+    brookSTDE = sampleSTDE(brookData)
+    manSTDE = sampleSTDE(manData)
+    queenSTDE = sampleSTDE(queenData)
+    willSTDE = sampleSTDE(willData)
 
-
-
-
-############################################################################
-#Part 2: Can Weather Predict Bicyclist Numbers?
-############################################################################
-# The city administration is cracking down on helmet laws, and wants to deploy police officers on days with high traffic to hand out citations.
-# Can they use the next day's weather forecast(low/high temperature and precipitation) to predict the total number of bicyclists that day? 
-
-#create a linear regression model to predict the total number of bicyclists based on the next day's weather forecast
-
-from sklearn.linear_model import LinearRegression
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import PolynomialFeatures
-from sklearn.metrics import mean_squared_error
-
-
-def root_mean_squared_error(y_true, y_pred):
-    return np.sqrt(mean_squared_error(y_true, y_pred))
-
-def regression(x, y, degreeList):
-    """
-    Perform polynomial regression for each degree specified in degreeList and calculate the mean squared error.
-
-    Parameters:
-    x (array-like): The input data.
-    y (array-like): The target values.
-    degreeList (list of int): A list of polynomial degrees to fit.
-
-    Returns:
-    list: A list of mean squared errors for each polynomial degree.
-    """
-    pltMSE = []
-    for deg in degreeList:
-        polyModel = PolynomialFeatures(degree=deg)
-        polyXVal = polyModel.fit_transform(x)
-        regressionModel = LinearRegression()
-        regressionModel.fit(polyXVal, y)
-        yPredict = regressionModel.predict(polyXVal)
-        pltMSE.append(root_mean_squared_error(y, yPredict))
-    return pltMSE
+    STDEList = [brookSTDE, manSTDE, queenSTDE, willSTDE]
+    if max(STDEList) == brookSTDE:
+        return 'Brooklyn Bridge'
+    elif max(STDEList) == manSTDE:
+        return 'Manhattan Bridge'
+    elif max(STDEList) == queenSTDE:
+        return 'Queensboro Bridge'
+    elif max(STDEList) == willSTDE:
+        return 'Williamsburg Bridge'
+    else:
+        return "Something went wrong"
 
 
 
-def bestRegression(x, y, deg):
-    polyModel = PolynomialFeatures(degree=deg)
-    polyXVal = polyModel.fit_transform(x)
-    regressionModel = LinearRegression()
-    regressionModel.fit(polyXVal, y)
-    yPredict = regressionModel.predict(polyXVal)
-    # pltMSE = root_mean_squared_error(y, yPredict)
-    return yPredict, regressionModel
+def regression(data, bridges):
 
-#Extracting the data from the CSV
-dataset_2['High Temp'] = pandas.to_numeric(dataset_2['High Temp'].replace(',','', regex=True))
-dataset_2['Low Temp'] = pandas.to_numeric(dataset_2['Low Temp'].replace(',','', regex=True))
-dataset_2['Precipitation'] = pandas.to_numeric(dataset_2['Precipitation'].replace(',','', regex=True))
-dataset_2['Total'] = pandas.to_numeric(dataset_2['Total'].replace(',','', regex=True))
+    x = data[bridges].values
+    y = data['Total'].values
 
-weatherData = dataset_2[['High Temp', 'Low Temp', 'Precipitation']]
-bikerData = dataset_2['Total']
+    xTrain, xTest, yTrain, yTest = train_test_split(x, y, test_size=0.2, random_state=0)
 
-#Splitting the data into training and testing data
-weatherTrain, weatherTest, bikerTrain, bikerTest = train_test_split(weatherData, bikerData, test_size=0.2)
+    model = LinearRegression()
+    model.fit(xTrain, yTrain)
 
-# #Creating the model
-# model = LinearRegression()
-# model.fit(weatherTrain, bikerTrain)
-
-# #Predicting the data
-# bikerPrediction = model.predict(weatherTest)
-
-# #Printing the model's accuracy, r^2
-# r2 = model.score(weatherTest, bikerTest)
-
-# print("coefficient of determination: " + str(r2))
-# if r2 > 0.5:
-#     print('The model is accurate')
-# else:
-#     print('The model is not accurate')
-
-degrees = [1, 2, 3, 4, 5]
-mse = regression(weatherData, bikerData, degrees)
-best_degree = degrees[mse.index(min(mse))]
-# predicted_values, model = bestRegression(weatherData, bikerData, best_degree)
-# print(f"Best degree: {best_degree}")
-
-# determine if the model is actually accurate
-model = LinearRegression()
-poly = PolynomialFeatures(degree=best_degree)
-weatherTrainPoly = poly.fit_transform(weatherTrain)
-model.fit(weatherTrainPoly, bikerTrain)
-weatherTestPoly = poly.fit_transform(weatherTest)
-bikerPrediction = model.predict(weatherTestPoly)
-# r2 = model.score(weatherTestPoly, bikerTest)
-# if r2 > 0.5:
-#     print('The model is accurate')
-# else:
-#     print('The model is not accurate')
-
-# print(r2)
-print(f"the best model with a degree of {best_degree} has an error of: {mse[best_degree-1]}")
-
-# average of the total number of bicyclists
-# average = np.mean(bikerData)
-# print(f"The average number of bicyclists is {average}")
-
-# average of the total number of bicyclists: 18545, mse of degree 4: 3132. Considering the average number of people, the model could be used
+    pred = model.score(xTest, yTest)
+    return model, pred
 
 
 
+def main():
+
+    data = pd.read_csv('NYC_Bicycle_Counts_2016.csv')
+    for bridge in ['Brooklyn Bridge', 'Manhattan Bridge', 'Queensboro Bridge', 'Williamsburg Bridge', 'Total']:
+        data[bridge] = pd.to_numeric(data[bridge].replace(',', '', regex=True))
+
+    data['Date'] = pd.to_datetime(data['Date'] + '-2016', format='%d-%b-%Y')
+    data['Day of Week'] = data['Date'].dt.day_name()
+    bridges = ['Brooklyn Bridge', 'Manhattan Bridge', 'Queensboro Bridge', 'Williamsburg Bridge']
+
+    weatherData = data[['Low Temp', 'High Temp', 'Precipitation']]
+
+    ############################################################################
+    #Part 1: Finding Which Bridges to Add Sensors To
+    ############################################################################
+    print("Part 1")
+
+    not_bridge = find_bridge_to_add_sensors(data, bridges)
+    print(f"Put sensors on every bridge but the {not_bridge}")
 
 
-# ############################################################################
-# #Part 3: Can you predict the day of the week based on the number of bicyclists?
-# ############################################################################
-# #Can you analyze and visualize the data to identify any patterns or trends associated with specific days of the week?
-# #(Hint: One way is that you can average the values over all weekdays and then see if there are some weekly patterns.)
-# #Can you use this data to predict what *day* (Monday to Sunday) is today based on the number of bicyclists on the bridges?
+    ############################################################################
+    #Part 2: Can Weather Predict Bicyclist Numbers?
+    ############################################################################
+    print("\Part 2")
 
-# # Create a dictionary where the keys are days of the week and values are lists with all of the totals with the corresponding day of the week
-# days_of_week = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-# totals_by_day = {day: [] for day in days_of_week}
+    bikerData = data['Total']
 
-# # Populate the dictionary with the totals
-# for index, row in dataset_2.iterrows():
-#     day = row['Day']
-#     total = row['Total']
-#     totals_by_day[day].append(total)
+    weatherTrain, weatherTest, bikerTrain, bikerTest = train_test_split(weatherData, bikerData, test_size = 0.2, random_state = 2)
 
-# # print(totals_by_day)
+    model = LinearRegression()
+    model.fit(weatherTrain, bikerTrain)
+    bikerPrediction = model.predict(weatherTest)
 
-# # Find the average total for each day of the week
-# averages_by_day = {day: np.mean(totals) for day, totals in totals_by_day.items()}
-# # print(averages_by_day)
-# # convert the values to floats from numpy floats
-# averages_by_day = {day: float(average) for day, average in averages_by_day.items()}
-# # print(averages_by_day)
+    # r2_score = model.score(weatherTest, bikerTest)
+    # print(f"R^2 score: {r2_score}")
+    #R^2 correlation no worky, sadge. So we'll use something else instead
 
-# # Find the day with the highest average total
-# max_average = max(averages_by_day.values())
-# max_day = [day for day, average in averages_by_day.items() if average == max_average][0]
+    correlation = np.corrcoef(bikerPrediction, bikerTest)[0, 1]
+    print(f"Correlation: {correlation}")
 
-# print(f'The day with the highest average total is {max_day} with an average total of {int(max_average)}.')
+    #graphing problem 2 data to visualize
+    # plt.figure(figsize=(14, 6))
+    # plt.subplot(1, 2, 1)
+    # plt.scatter(weatherTest['High Temp'], bikerTest, color = 'blue', label = "High Temp")
+    # plt.xlabel("High Temp")
+    # plt.ylabel("Total Bikers")
+    # plt.title("Correlation Between High Temp and Number of Bikers")
+    # plt.legend()
+    
+    # plt.subplot(1, 2, 2)
+    # plt.scatter(weatherTest['Low Temp'], bikerTest, color = 'blue', label = "Low Temp")
+    # plt.xlabel("Low Temp")
+    # plt.ylabel("Total Bikers")
+    # plt.title("Correlation Between Low Temp and Number of Bikers")
+    # plt.legend()
+    # plt.show()
+
+
+    ############################################################################
+    # Part 3: Can you predict the day of the week based on the number of bicyclists?
+    ############################################################################
+    print("\nPart 3")
+
+    #Define the order of the days of the week
+    days_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+
+    #Create an ordered dictionary where the keys are days of the week and values are lists with all of the totals with the corresponding day of the week
+    dayDict = OrderedDict()
+    for day in days_order:
+        dayDict[day] = data[data['Day of Week'] == day]['Total'].values
+
+    #Calculate the average number of bikers for each day of the week
+    avgDict = OrderedDict()
+    for day in dayDict:
+        avgDict[day] = np.mean(dayDict[day])
+
+    # rint the average number of bikers for each day of the week, easily see if there is an obvious pattern
+    for day in avgDict:
+        print(f"{day}: {avgDict[day]}")
+    #from the data provided, it seems that the number of bikers is highest on Wednesday and lowest on Sunday.
+    #there does seem to be a trend, but it is not very strong. This will likely not be a very accurate model.
+    #some of the data has less than a 1000 biker difference between days, which is not a lot when the total number of bikers is in the tens of thousands.
+
+    regression(data['Date'], data['Total'])
+
+    correlation = np.corrcoef(bikerPrediction, bikerTest)[0, 1]
+    print(f"Correlation: {correlation}")
+    
 
 
 
+if __name__ == "__main__":
+    main()
