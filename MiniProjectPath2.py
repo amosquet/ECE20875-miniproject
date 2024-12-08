@@ -6,10 +6,10 @@ from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 from collections import OrderedDict
 
-
+#for part 1
 def sampleSTDE(data):
     return np.std(data, ddof=1) / np.sqrt(len(data))
-
+#for part 1
 def find_bridge_to_add_sensors(data, bridges):
 
     brookData = data['Brooklyn Bridge'].to_numpy()
@@ -35,8 +35,8 @@ def find_bridge_to_add_sensors(data, bridges):
         return "Something went wrong"
 
 
-
-def regression(data, bridges):
+#Linear Regressionfor part 2
+def linRegression(data, bridges):
 
     x = data[bridges].values
     y = data['Total'].values
@@ -48,6 +48,44 @@ def regression(data, bridges):
 
     pred = model.score(xTest, yTest)
     return model, pred
+
+#Logistic Regression for part 2
+def logRegression(data, bridges):
+
+    #have to convert the days to numbers then go from there.
+
+#weekly averages
+def weekAvg(data, order):
+
+    # Create an ordered dictionary where the keys are days of the week and values are lists with all of the totals with the corresponding day of the week
+    dayDict = OrderedDict()
+    for day in order:
+        dayDict[day] = data[data['Day of Week'] == day]['Total'].values
+
+    # Calculate the average number of bikers for each day of the week
+    avgDict = {}
+    for day in dayDict:
+        avgDict[day] = np.mean(dayDict[day])
+
+    # Convert the dictionary of averages to floats from numpy floats
+    for day in avgDict:
+        avgDict[day] = float(avgDict[day])
+    
+    # Return the dictionary of averages
+    return avgDict
+
+#for part 3 analysis
+def part3(data, order, averages):
+
+    # plot the averages
+    plt.figure(figsize=(14, 6))
+    plt.bar(averages.keys(), averages.values(), color='blue')
+    plt.xlabel("Day of the Week")
+    plt.ylabel("Average Number of Bikers")
+    plt.title("Average Number of Bikers per Day of the Week")
+    plt.show()
+
+    
 
 
 
@@ -75,7 +113,7 @@ def main():
     ############################################################################
     #Part 2: Can Weather Predict Bicyclist Numbers?
     ############################################################################
-    print("\Part 2")
+    print("Part 2")
 
     bikerData = data['Total']
 
@@ -115,32 +153,15 @@ def main():
     ############################################################################
     print("\nPart 3")
 
-    #Define the order of the days of the week
     days_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-
-    #Create an ordered dictionary where the keys are days of the week and values are lists with all of the totals with the corresponding day of the week
-    dayDict = OrderedDict()
-    for day in days_order:
-        dayDict[day] = data[data['Day of Week'] == day]['Total'].values
-
-    #Calculate the average number of bikers for each day of the week
-    avgDict = OrderedDict()
-    for day in dayDict:
-        avgDict[day] = np.mean(dayDict[day])
-
-    # rint the average number of bikers for each day of the week, easily see if there is an obvious pattern
-    for day in avgDict:
-        print(f"{day}: {avgDict[day]}")
+    
+    averages = weekAvg(data, days_order)
+    print(averages)
     #from the data provided, it seems that the number of bikers is highest on Wednesday and lowest on Sunday.
     #there does seem to be a trend, but it is not very strong. This will likely not be a very accurate model.
     #some of the data has less than a 1000 biker difference between days, which is not a lot when the total number of bikers is in the tens of thousands.
 
-    regression(data['Date'], data['Total'])
-
-    correlation = np.corrcoef(bikerPrediction, bikerTest)[0, 1]
-    print(f"Correlation: {correlation}")
-    
-
+    part3(data, days_order, averages)
 
 
 if __name__ == "__main__":
