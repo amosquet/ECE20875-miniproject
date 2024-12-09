@@ -1,12 +1,11 @@
 import pandas as pd
 import numpy as np
-from sklearn.metrics import accuracy_score, mean_squared_error
-from sklearn.linear_model import Ridge, LinearRegression
+from sklearn.metrics import accuracy_score
+from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 from collections import OrderedDict
-from sklearn.linear_model import LogisticRegression
 
 #for part 1
 def sampleSTDE(data):
@@ -37,19 +36,39 @@ def find_bridge_to_add_sensors(data, bridges):
         return "Something went wrong"
 
 
-#Linear Regressionfor part 2
-def linRegression(data, bridges):
+def part2Graph(bikerTest, weatherTest):
 
-    x = data[bridges].values
-    y = data['Total'].values
+    # graphing problem 2 data to visualize
+    plt.figure(figsize=(14, 6))
+    plt.subplot(1, 2, 1)
+    plt.scatter(weatherTest['High Temp'], bikerTest, color = 'blue', label = "High Temp")
+    plt.xlabel("High Temp")
+    plt.ylabel("Total Bikers")
+    plt.title("Correlation Between High Temp and Number of Bikers")
+    plt.legend()
+    
+    plt.subplot(1, 2, 2)
+    plt.scatter(weatherTest['Low Temp'], bikerTest, color = 'blue', label = "Low Temp")
+    plt.xlabel("Low Temp")
+    plt.ylabel("Total Bikers")
+    plt.title("Correlation Between Low Temp and Number of Bikers")
+    plt.legend()
+    plt.show()
 
-    xTrain, xTest, yTrain, yTest = train_test_split(x, y, test_size=0.2, random_state=0)
+#Linear Regression and correlation for part 2
+def linRegression(bikerData, weatherData):
+
+
+    weatherTrain, weatherTest, bikerTrain, bikerTest = train_test_split(weatherData, bikerData, test_size = 0.2, random_state = 2)
 
     model = LinearRegression()
-    model.fit(xTrain, yTrain)
+    model.fit(weatherTrain, bikerTrain)
+    bikerPrediction = model.predict(weatherTest)
 
-    pred = model.score(xTest, yTest)
-    return model, pred
+    #graph the data to visualize, correlation not included in the graph
+    # part2Graph(bikerTest, weatherTest)
+
+    return np.corrcoef(bikerPrediction, bikerTest)[0, 1]
 
 #Weekly averages for part 3
 def weekAvg(data, order):
@@ -113,10 +132,6 @@ def p3Helper(data, bridges, averages):
 
     return logRegression(data, bridges)
 
-    
-
-
-
 def main():
 
     data = pd.read_csv('NYC_Bicycle_Counts_2016.csv')
@@ -127,12 +142,10 @@ def main():
     data['Day of Week'] = data['Date'].dt.day_name()
     bridges = ['Brooklyn Bridge', 'Manhattan Bridge', 'Queensboro Bridge', 'Williamsburg Bridge']
 
-    weatherData = data[['Low Temp', 'High Temp', 'Precipitation']]
-
     ############################################################################
     #Part 1: Finding Which Bridges to Add Sensors To
     ############################################################################
-    print("Part 1")
+    print("Part 1:")
 
     not_bridge = find_bridge_to_add_sensors(data, bridges)
     print(f"Put sensors on every bridge but the {not_bridge}")
@@ -140,44 +153,19 @@ def main():
     ############################################################################
     #Part 2: Can Weather Predict Bicyclist Numbers?
     ############################################################################
-    print("\nPart 2")
+    print("\nPart 2:")
 
     bikerData = data['Total']
+    weatherData = data[['Low Temp', 'High Temp', 'Precipitation']]
 
-    weatherTrain, weatherTest, bikerTrain, bikerTest = train_test_split(weatherData, bikerData, test_size = 0.2, random_state = 2)
+    correlation = linRegression(bikerData, weatherData)
 
-    model = LinearRegression()
-    model.fit(weatherTrain, bikerTrain)
-    bikerPrediction = model.predict(weatherTest)
-
-    # r2_score = model.score(weatherTest, bikerTest)
-    # print(f"R^2 score: {r2_score}")
-    #R^2 correlation no worky, sadge. So we'll use something else instead
-
-    correlation = np.corrcoef(bikerPrediction, bikerTest)[0, 1]
     print(f"Correlation: {correlation}")
-
-    #graphing problem 2 data to visualize
-    # plt.figure(figsize=(14, 6))
-    # plt.subplot(1, 2, 1)
-    # plt.scatter(weatherTest['High Temp'], bikerTest, color = 'blue', label = "High Temp")
-    # plt.xlabel("High Temp")
-    # plt.ylabel("Total Bikers")
-    # plt.title("Correlation Between High Temp and Number of Bikers")
-    # plt.legend()
-    
-    # plt.subplot(1, 2, 2)
-    # plt.scatter(weatherTest['Low Temp'], bikerTest, color = 'blue', label = "Low Temp")
-    # plt.xlabel("Low Temp")
-    # plt.ylabel("Total Bikers")
-    # plt.title("Correlation Between Low Temp and Number of Bikers")
-    # plt.legend()
-    # plt.show()
 
     ############################################################################
     # Part 3: Can you predict the day of the week based on the number of bicyclists?
     ############################################################################
-    print("\nPart 3")
+    print("\nPart 3:")
 
     days_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
     
